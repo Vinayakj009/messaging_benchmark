@@ -1,0 +1,17 @@
+{
+  "name": "wesocketjs",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "test": "node server.js client",
+    "start": "node server.js server"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "mqtt": "^5.3.4",
+    "uWebSockets.js": "uNetworking/uWebSockets.js#v20.20.0",
+    "ws": "^8.16.0"
+  }
+}
