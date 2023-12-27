@@ -1,5 +1,6 @@
 import { Printable } from "./server/interfaces";
-import { MqttClient, MqttServer, ServerTester } from "./server/mqtt";
+import { MqttClient, MqttServer } from "./server/mqtt";
+import { ServerTester } from "./server/serverTester";
 
 const protocol = 'mqtt'
 const host = 'mqtt-broker'
