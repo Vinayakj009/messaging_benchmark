@@ -1,7 +1,6 @@
 /* Simplified stock exchange made with mqtt pub/sub */
 import mqtt from 'mqtt'
-import { Printable, Publishable, Server, webSocketClient, webSocketServer } from './interfaces';
-import { Printer } from './printer';
+import { webSocketClient, webSocketServer } from './interfaces';
 
 
 class MqttClient implements webSocketClient {
