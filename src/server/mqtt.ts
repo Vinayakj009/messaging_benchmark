@@ -1,18 +1,8 @@
 /* Simplified stock exchange made with mqtt pub/sub */
 import mqtt from 'mqtt'
+import { Printable, Publishable, Server, webSocketClient, webSocketServer } from './interfaces';
+import { Printer } from './printer';
 
-interface Printable {
-    printServerData(transactionsPerSecond: number, activeSubscribers: number, shares: { [key: string]: number }): void;
-    printClientData(sentTransactionsPerSecond: number, receivedTransactionsPerSecond: number, expected: number, clients: number): void;
-    printStatus(message: string): void;
-    onDisconnect(): void;
-}
-
-interface Server {
-    startServer(): void;
-    startClients(publishers: number, subscribersPerPublisher: number): void;
-    stop(): void;
-}
 
 
 class Trader{
@@ -22,18 +12,6 @@ class Trader{
         const topic = Math.random() > 0.5 ? 'buy' : 'sell';
         this.client.publish(topic, this.shareOfInterest);
     }
-}
-
-interface Publishable {
-    publish(topic: string, message: string): void;
-}
-
-interface webSocketClient {
-    connect(url: string): void;
-    disconnect(): void;
-    publish(topic: string, message: string): void;
-    onMessage(callback: (topic: string, message: string) => void): void;
-    onConnect(callback: () => void): void;
 }
 
 
@@ -92,15 +70,6 @@ class MqttClient implements webSocketClient {
         this.onConnectCallback = callback;
     }
 }
-
-interface webSocketServer {
-    startServer(url: string): void;
-    stop(): void;
-    sendToTopic(topic: string, message: string): void;
-    onMessage(callback: (topic: string, message: string) => void): void;
-    onConnect(callback: () => void): void;
-}
-
 class MqttServer implements webSocketServer{
     private client: mqtt.MqttClient;
     private messageCallback: (topic: string, message: string) => void;
@@ -149,30 +118,7 @@ class MqttServer implements webSocketServer{
     }
 }
 
-class Printer implements Printable {
-    printServerData(transactionsPerSecond: number, activeSubscribers: number, shares: { [key: string]: number }): void {
-        console.log("Transactions per second: " , transactionsPerSecond);
-        console.log("Active subscribers: " , activeSubscribers);
-        console.log("Here are the curret shares:", shares);
-    }
-
-    printClientData(sentTransactionsPerSecond: number, receivedTransactionsPerSecond: number, expected: number, clients: number): void {
-        console.log("Transactions sent per second: " , sentTransactionsPerSecond);
-        console.log("Transactions received per second : " , receivedTransactionsPerSecond);
-        console.log("Expected " , expected);
-        console.log("Clients " , clients);
-    }
-
-    printStatus(message: string): void {
-        // Implementation goes here
-    }
-
-    onDisconnect(): void {
-        // Implementation goes here
-    }
-}
-
-class TestServer implements Server {
+class ServerTester implements Server {
     private server: webSocketServer;
     private transactions: number = 0;
     private establishedConnections: number = 0;
@@ -309,4 +255,4 @@ class TestServer implements Server {
     }
 }
 
-export { TestServer as ServerTester, MqttServer, Printable, MqttClient };
+export { ServerTester, MqttServer, MqttClient };
