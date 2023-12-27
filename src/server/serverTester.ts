@@ -27,8 +27,7 @@ export class ServerTester implements Server {
 
 
     constructor(private serverBuilder: (Printable: Printable) => webSocketServer,
-        private clientBuilder: (Printable: Printable, shareOfInterest: string) => webSocketClient,
-        private url: string) {
+        private clientBuilder: (Printable: Printable, shareOfInterest: string) => webSocketClient) {
         this.Printer = new Printer();
     }
 
@@ -95,7 +94,7 @@ export class ServerTester implements Server {
                 }
             }
         });
-        this.server.startServer(this.url);
+        this.server.startServer();
     }
 
     public startClients(publishers: number, subscribersPerPublisher: number): void {
@@ -108,7 +107,7 @@ export class ServerTester implements Server {
                 client.onMessage((topic: string, message: string) => {
                     this.receivedMessages++;
                 });
-                client.connect(this.url);
+                client.connect();
                 this.clients.push(client);
                 if (subscriberId == 0) {
                     this.traders.push(new Trader(client, `share_${publisherId}`));

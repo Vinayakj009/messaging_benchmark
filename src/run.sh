@@ -8,4 +8,4 @@ docker container run -d --rm -v $(pwd):/project -w /project --network mqtt --nam
 docker container logs -f mqtt
 docker container stop mqtt mqtt-broker
 docker network rm mqtt
-rm *.js
+rm *.js server/*.js server/*/*.js

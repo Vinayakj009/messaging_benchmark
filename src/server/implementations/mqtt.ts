@@ -10,9 +10,10 @@ class MqttClient implements webSocketClient {
     private messageCallback: (topic: string, message: string) => void;
     constructor(private printable: {
         printStatus(message: string): void;
-    }, private shreOfInterest : string) {
+    }, private shreOfInterest: string, private host: string, private port: number, private protocol: string) {
     }
-    connect(url: string): void{
+    connect(): void{
+        const url = `${this.protocol}://${this.host}:${this.port}`;
         this.client = mqtt.connect(
             url,
             {
@@ -64,7 +65,7 @@ class MqttServer implements webSocketServer{
     private onConnectCallback: () => void;
     constructor(private printable: {
         printStatus(message: string): void;
-    }) {
+    }, private host: string, private port: number, private protocol: string) {
     }
     public onConnect(callback: () => void): void {
         this.onConnectCallback = callback;
@@ -78,9 +79,9 @@ class MqttServer implements webSocketServer{
     public stop(): void {
         this.client.end();
     }
-    public startServer(url: string): void{
+    public startServer(): void{
         this.client = mqtt.connect(
-            url,
+            `${this.protocol}://${this.host}:${this.port}`,
             {
                 clientId: `mqtt_a`,
                 clean: true,
