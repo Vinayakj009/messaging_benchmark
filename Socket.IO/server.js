@@ -21,7 +21,7 @@ server_io.on('connection', function(socket) {
 		switch (json.action) {
 			case 'sub': {
 				/* Subscribe to the share's value stream */
-				socket.join('shares/' + json.share + '/value');
+				socket.join(json.share);
 				break;
 			}
 			case 'buy': {
@@ -31,7 +31,7 @@ server_io.on('connection', function(socket) {
 				shares[json.share] *= 1.001;
 
 				/* Value of share has changed, update subscribers */
-				server_io.in('shares/' + json.share + '/value').send(JSON.stringify({[json.share]: shares[json.share]}));
+				server_io.emit(json.share,JSON.stringify({[json.share]: shares[json.share]}));
 				break;
 			}
 			case 'sell': {
@@ -40,7 +40,7 @@ server_io.on('connection', function(socket) {
 				/* For simplicity, shares decrease 0.1% with every sale */
 				shares[json.share] *= 0.999
 
-				server_io.in('shares/' + json.share + '/value').send(JSON.stringify({[json.share]: shares[json.share]}));
+				server_io.emit(json.share, JSON.stringify({[json.share]: shares[json.share]}));
 				break;
 			}
 		}
