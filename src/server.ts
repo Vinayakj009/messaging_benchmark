@@ -2,6 +2,7 @@ import { Printable } from "./server/interfaces";
 import { SocketIoClient, SocketIoServer } from "./server/implementations/socketIo";
 import { ServerTester } from "./server/serverTester";
 import { MqttClient, MqttServer } from "./server/implementations/mqtt";
+import { uWebSocketClient, uWebSocketServer } from "./server/implementations/uWebSocket";
 
 let protocol = 'http'
 let host = '127.0.0.1'
@@ -15,6 +16,8 @@ const serverTester = new ServerTester((Printer: Printable) => {
     switch (serverType) {
         case "socketio":
             return new SocketIoServer(Printer, host, port, protocol);
+        case "uwebsocket":
+            return new uWebSocketServer(Printer, host, port, protocol);
         case "mqtt":
             protocol = "mqtt";
             host = "mqtt-broker";
@@ -25,7 +28,9 @@ const serverTester = new ServerTester((Printer: Printable) => {
 }, (Printer: Printable, shreOfInterest: string) => {
     switch (serverType) {
         case "socketio":
-            return new SocketIoClient(Printer, shreOfInterest, host, port, protocol);;
+            return new SocketIoClient(Printer, shreOfInterest, host, port, protocol);
+        case "uwebsocket":
+            return new uWebSocketClient(Printer, shreOfInterest, host, port, protocol);
         case "mqtt":
             protocol = "mqtt";
             host = "mqtt-broker";

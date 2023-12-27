@@ -6,4 +6,4 @@ if [[ "$script" != "mqtt" && "$script" != "socketio" && "$script" != "uwebsocket
     exit 1
 fi
 
-docker container exec -it mqtt npm run "$script""_client"
+docker container exec -it container npm run "$script""_client"

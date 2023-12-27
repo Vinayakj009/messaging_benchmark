@@ -13,11 +13,12 @@ if [[ "$script" == "mqtt" ]]; then
     docker container run -d --rm --name mqtt-broker --network serverTest -v $(pwd)/mosquitto:/mosquitto eclipse-mosquitto
 fi
 
-docker container run -d --rm -v $(pwd):/project -w /project --network serverTest --name mqtt node:16 npm run $script
-docker container logs -f mqtt
+docker container run -d --rm -v $(pwd):/project -w /project --network serverTest --name container node:16 npm run $script
+docker container logs -f container
 
 if [[ "$script" == "mqtt" ]]; then
     docker container stop mqtt mqtt-broker
 fi
 docker network rm serverTest
+docker container stop container
 rm *.js server/*.js server/*/*.js
