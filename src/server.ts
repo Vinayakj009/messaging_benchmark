@@ -1,24 +1,47 @@
 import { Printable } from "./server/interfaces";
-import { MqttClient, MqttServer } from "./server/implementations/mqtt";
+import { SocketIoClient, SocketIoServer } from "./server/implementations/socketIo";
 import { ServerTester } from "./server/serverTester";
+import { MqttClient, MqttServer } from "./server/implementations/mqtt";
 
-const protocol = 'mqtt'
-const host = 'mqtt-broker'
-const port = '1883'
-const connectUrl = `${protocol}://${host}:${port}`
+let protocol = 'http'
+let host = '127.0.0.1'
+const port = 1883
+
+
+const runType = process.argv[2];
+const serverType = process.argv[3];
+
 const serverTester = new ServerTester((Printer: Printable) => {
-    return new MqttServer(Printer);
+    switch (serverType) {
+        case "socketio":
+            return new SocketIoServer(Printer, host, port, protocol);
+        case "mqtt":
+            protocol = "mqtt";
+            host = "mqtt-broker";
+            return new MqttServer(Printer, host, port, protocol);
+        default:
+            throw new Error("no server type specified");
+    }
 }, (Printer: Printable, shreOfInterest: string) => {
-    return new MqttClient(Printer, shreOfInterest);
+    switch (serverType) {
+        case "socketio":
+            return new SocketIoClient(Printer, shreOfInterest, host, port, protocol);;
+        case "mqtt":
+            protocol = "mqtt";
+            host = "mqtt-broker";
+            return new MqttClient(Printer, shreOfInterest, host, port, protocol);;
+        default:
+            throw new Error("no server type specified");
+    }
+    
 }
-    , connectUrl);
+    );
 
 console.log("starting server");
-const arg = process.argv[2];
 
-if (arg === "server") {
+if (runType === "server") {
     serverTester.startServer();
-} else if (arg === "client") {
+} else if (runType === "client") {
     serverTester.startClients(10, 10);
 }
 console.log("server ended");
