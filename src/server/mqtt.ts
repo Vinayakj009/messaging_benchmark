@@ -309,4 +309,4 @@ class TestServer implements Server {
     }
 }
 
-export { TestServer, MqttServer, Printable, MqttClient };
+export { TestServer as ServerTester, MqttServer, Printable, MqttClient };
