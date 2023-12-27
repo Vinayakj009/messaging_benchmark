@@ -1,6 +1,6 @@
 #!/bin/bash
 
-tsc *.ts
+tsc src/*.ts
 script="$1"
 
 if [[ "$script" != "mqtt" && "$script" != "socketio" && "$script" != "uwebsocket" ]]; then

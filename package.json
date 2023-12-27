@@ -4,12 +4,12 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "mqtt": "node server.js server mqtt",
-    "mqtt_client": "node server.js client mqtt",
-    "socketio": "node server.js server socketio",
-    "socketio_client": "node server.js client socketio",
-    "uwebsocket": "node server.js server uwebsocket",
-    "uwebsocket_client": "node server.js client uwebsocket"
+    "mqtt": "node src/server.js server mqtt",
+    "mqtt_client": "node src/server.js client mqtt",
+    "socketio": "node src/server.js server socketio",
+    "socketio_client": "node src/server.js client socketio",
+    "uwebsocket": "node src/server.js server uwebsocket",
+    "uwebsocket_client": "node src/server.js client uwebsocket"
   },
   "author": "",
   "license": "ISC",
