@@ -8,10 +8,19 @@ export class Printer implements Printable {
         console.log("Here are the curret shares:", shares);
     }
 
-    printClientData(sentTransactionsPerSecond: number, receivedTransactionsPerSecond: number, expected: number, clients: number): void {
-        console.log("Transactions sent per second: ", sentTransactionsPerSecond);
-        console.log("Transactions received per second : ", receivedTransactionsPerSecond);
-        console.log("Expected ", expected);
+    printClientData(
+        sentTransactionsPerSecond: number,
+        expectedTransactionsPerSecond: number,
+        receivedTransactionsPerSecond: number,
+        expectedReceivedTransactionsPerSecond: number,
+        clients: number): void {
+        console.log("Transactions sent per second: ", sentTransactionsPerSecond,
+            " expected: ", expectedTransactionsPerSecond,
+            " effeciency: ", sentTransactionsPerSecond * 100 / expectedTransactionsPerSecond);
+        console.log("Transactions received per second: ", receivedTransactionsPerSecond,
+            " expected: ", expectedReceivedTransactionsPerSecond,
+            " effeciency: ", receivedTransactionsPerSecond * 100 / expectedReceivedTransactionsPerSecond);
+        console.log("Expected ", expectedReceivedTransactionsPerSecond);
         console.log("Clients ", clients);
     }
 

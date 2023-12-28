@@ -39,7 +39,7 @@ const serverTester = new ServerTester((Printer: Printable) => {
             throw new Error("no server type specified");
     }
     
-}
+},100
     );
 
 console.log("starting server");
@@ -47,6 +47,6 @@ console.log("starting server");
 if (runType === "server") {
     serverTester.startServer();
 } else if (runType === "client") {
-    serverTester.startClients(10, 10);
+    serverTester.startClients(5, 20, 50);
 }
 console.log("server ended");
