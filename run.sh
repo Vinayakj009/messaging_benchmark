@@ -40,6 +40,8 @@ bash startRequirements.sh $script
 
 print_with_border "Running server for $script"
 # We are running node 16 as uWebSocket does not work with latest node version
+# You can run `git apply latestNode.diff` and then run the test for other servers if you want to check them running on 
+# latest version of node
 docker container run -d --rm -v $(pwd):/project -w /project --network serverTest --name $script node:16 npm run start $script
 docker container logs -f $script
 

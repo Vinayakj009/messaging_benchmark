@@ -1,0 +1,47 @@
+diff --git a/run.sh b/run.sh
+index 449978a..4a3419a 100644
+--- a/run.sh
++++ b/run.sh
+@@ -40,7 +40,7 @@ bash startRequirements.sh $script
+ 
+ print_with_border "Running server for $script"
+ # We are running node 16 as uWebSocket does not work with latest node version
+-docker container run -d --rm -v $(pwd):/project -w /project --network serverTest --name $script node:16 npm run start $script
++docker container run -d --rm -v $(pwd):/project -w /project --network serverTest --name $script node npm run start $script
+ docker container logs -f $script
+ 
+ print_with_border "Removing compiled js code"
+diff --git a/src/server.ts b/src/server.ts
+index a648342..96d257b 100644
+--- a/src/server.ts
++++ b/src/server.ts
+@@ -2,7 +2,7 @@ import { Printable } from "./server/interfaces";
+ import { SocketIoClient, SocketIoServer } from "./server/implementations/socketIo";
+ import { ServerTester } from "./server/serverTester";
+ import { MqttClient, MqttServer } from "./server/implementations/mqtt";
+-import { uWebSocketClient, uWebSocketServer } from "./server/implementations/uWebSocket";
++// import { uWebSocketClient, uWebSocketServer } from "./server/implementations/uWebSocket";
+ import { stompClient, stompServer } from "./server/implementations/stomp";
+ 
+ const serverTypes: {
+@@ -21,13 +21,13 @@ const serverTypes: {
+         host: "127.0.0.1",
+         port: 1883
+     },
+-    uwebsocket: {
+-        client: uWebSocketClient,
+-        server: uWebSocketServer,
+-        protocol: "http",
+-        host: "127.0.0.1",
+-        port: 1883
+-    },
++    // uwebsocket: {
++    //     client: uWebSocketClient,
++    //     server: uWebSocketServer,
++    //     protocol: "http",
++    //     host: "127.0.0.1",
++    //     port: 1883
++    // },
+     mqtt: {
+         client: MqttClient,
+         server: MqttServer,
