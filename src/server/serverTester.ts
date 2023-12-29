@@ -107,26 +107,25 @@ export class ServerTester implements Server {
         });
         this.server.startServer();
     }
-    public buildClient(topic: string): webSocketClient {
+    public buildClient(topic: string, isTrader: boolean) {
         const client = this.clientBuilder(this.Printer, topic);
         client.onConnect(() => {
             this.establishedConnections++;
+            if (isTrader) {
+                this.traders.push(new Trader(client, topic));
+            }
         });
         client.onMessage((topic: string, message: string) => {
             this.receivedMessages++;
         });
         client.connect();
         this.clients.push(client);
-        return client;
     }
 
     public startClientsForTopic(publishers: number, topic: string): void {
         const totalConnection = Math.max(publishers, this.subscribersPerTopic);
         for (let id = 0; id < totalConnection; id++) {
-            const client = this.buildClient(topic);
-            if (id < publishers) {
-                this.traders.push(new Trader(client, topic));
-            }
+            this.buildClient(topic, id < publishers);
         }
     }
 

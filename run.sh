@@ -27,16 +27,19 @@ fi
 print_with_border "Creating local network serverTest"
 docker network create serverTest 2>&1 > /dev/null
 
+
+print_with_border "Installing Node modules"
+docker container run -it --rm -v $(pwd):/project -w /project --network serverTest --name installer node npm install
+
+print_with_border "Compiling typescript to js"
+docker container run -it --rm -v $(pwd):/project -w /project --network serverTest --name compiler node npm run compile
+# npm run compile
+
 print_with_border "Starting requirements for $script"
 bash startRequirements.sh $script
 
-print_with_border "Installing Node modules"
-docker container run -it --rm -v $(pwd):/project -w /project --network serverTest --name container node:16 npm install
-
-print_with_border "Compiling typescript to js"
-docker container run -it --rm -v $(pwd):/project -w /project --network serverTest --name container node:16 npm run compile
-
 print_with_border "Running server for $script"
+# We are running node 16 as uWebSocket does not work with latest node version
 docker container run -d --rm -v $(pwd):/project -w /project --network serverTest --name $script node:16 npm run start $script
 docker container logs -f $script
 

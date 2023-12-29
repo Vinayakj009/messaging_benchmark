@@ -1,6 +1,6 @@
 /* Simplified stock exchange made with mqtt pub/sub */
 import { Server } from 'socket.io';
-import { io,Socket } from 'socket.io-client';
+import { io, Socket } from 'socket.io-client';
 import { webSocketClient, webSocketServer } from './interfaces';
 
 export class SocketIoClient implements webSocketClient {

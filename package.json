@@ -4,21 +4,23 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "compile": "tsc src/*.ts",
+    "compile": "tsc src/server.ts",
     "start": "node src/server.js server",
     "test": "node src/server.js client"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@stomp/stompjs": "^7.0.0",
+    "async-mutex": "^0.4.0",
     "mqtt": "^5.3.4",
     "ms": "^2.1.3",
     "socket.io": "^4.7.2",
     "socket.io-client": "^4.7.2",
+    "typescript": "^4.5.4",
     "uWebSockets.js": "uNetworking/uWebSockets.js#v20.20.0",
-    "ws": "^8.16.0",
-    "async-mutex": "^0.4.0",
-    "typescript": "^4.5.4"
+    "websocket": "^1.0.34",
+    "ws": "^8.16.0"
   },
   "devDependencies": {
     "@types/stompjs": "^2.3.9"

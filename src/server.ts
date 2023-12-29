@@ -3,6 +3,7 @@ import { SocketIoClient, SocketIoServer } from "./server/implementations/socketI
 import { ServerTester } from "./server/serverTester";
 import { MqttClient, MqttServer } from "./server/implementations/mqtt";
 import { uWebSocketClient, uWebSocketServer } from "./server/implementations/uWebSocket";
+import { stompClient, stompServer } from "./server/implementations/stomp";
 
 const serverTypes: {
     [key: string]: {
@@ -33,6 +34,13 @@ const serverTypes: {
         protocol: "mqtt",
         host: "mqtt-broker",
         port: 1883
+    },
+    stomp: {
+        client: stompClient,
+        server: stompServer,
+        protocol: "ws",
+        host: "stomp-broker",
+        port: 8080
     }
 }
 
@@ -62,6 +70,6 @@ console.log("starting server");
 if (runType === "server") {
     serverTester.startServer();
 } else if (runType === "client") {
-    serverTester.startClients(5, 20, 50);
+    serverTester.startClients(5, 5, 10);
 }
 console.log("server ended");
