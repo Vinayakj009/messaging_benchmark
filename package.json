@@ -4,12 +4,8 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "mqtt": "node src/server.js server mqtt",
-    "mqtt_client": "node src/server.js client mqtt",
-    "socketio": "node src/server.js server socketio",
-    "socketio_client": "node src/server.js client socketio",
-    "uwebsocket": "node src/server.js server uwebsocket",
-    "uwebsocket_client": "node src/server.js client uwebsocket"
+    "start": "node src/server.js server",
+    "test": "node src/server.js client"
   },
   "author": "",
   "license": "ISC",

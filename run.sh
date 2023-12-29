@@ -11,7 +11,7 @@ fi
 docker network create serverTest
 bash startRequirements.sh $script
 docker container run -it --rm -v $(pwd):/project -w /project --network serverTest --name container node:16 npm install
-docker container run -d --rm -v $(pwd):/project -w /project --network serverTest --name $script node:16 npm run $script
+docker container run -d --rm -v $(pwd):/project -w /project --network serverTest --name $script node:16 npm run start $script
 docker container logs -f $script
 bash stopRequirements.sh $script
 docker container stop $script
