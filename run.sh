@@ -1,7 +1,6 @@
 #!/bin/bash
 
-# scripts="uwebsocket socketio mqtt stomp"
-scripts="uwebsocket"
+scripts="uwebsocket socketio mqtt stomp"
 
 print_with_border() {
     local input_string="$1"
