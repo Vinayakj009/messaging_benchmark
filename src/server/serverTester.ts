@@ -74,6 +74,9 @@ export class TestCase {
     public publishersPerTopic: number,
     public subscribersPerTopic: number,
     public runTime: number){
+        this.receivedMessagesActual = 0;
+        this.establishedConnectionsActual = 0;
+        this.transactionsActual = 0;
         this.receivedMessagesExpected = this.runTime * 10 * this.topicCount * this.subscribersPerTopic;
         this.transactionsExpected = this.runTime * 10 * this.publishersPerTopic;
         this.establishedConnectionsExpected = this.topicCount * Math.max(this.subscribersPerTopic, this.publishersPerTopic);
@@ -205,7 +208,7 @@ export class ServerTester{
         });
         client.onMessage((topic: string, message: string) => {
             this.mutex.runExclusive(async () => {
-                this.receivedMessages;
+                this.receivedMessages++;
             });
         });
         client.connect();
