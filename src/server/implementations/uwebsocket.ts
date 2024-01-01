@@ -1,15 +1,15 @@
 /* Simplified stock exchange made with mqtt pub/sub */
-import { App, WebSocket } from 'uWebSockets.js';
+import { App, TemplatedApp } from 'uWebSockets.js';
 import { StringDecoder }  from 'string_decoder';
 import { webSocketClient, webSocketServer } from './interfaces';
 import { WebSocket as socket } from 'ws';
+import { Publishable } from '../interfaces';
 
 
 const decoder = new StringDecoder('utf8');
 
 export class uWebSocketClient implements webSocketClient {
     private socket: socket;
-    private clientId: string = `mqtt_${Math.random().toString(16).slice(3)}`;
     private onConnectCallback: () => void;
     private messageCallback: (topic: string, message: string) => void;
     constructor(private printable: {
@@ -54,7 +54,7 @@ export class uWebSocketClient implements webSocketClient {
 }
 
 export class uWebSocketServer implements webSocketServer {
-    private server: WebSocket<unknown>;
+    private server: TemplatedApp;
     private messageCallback: (topic: string, message: string) => void;
     private onConnectCallback: () => void;
     constructor(private printable: {
@@ -71,20 +71,15 @@ export class uWebSocketServer implements webSocketServer {
         this.server.publish(topic, message);
     }
     public stop(): void {
-        this.server.close();
     }
     public startServer(): void {
-        
-        App().ws('/*', {
+        this.server = App();
+        this.server.ws('/*', {
             message: (ws, message, isBinary) => {
-                if (this.server == null) {
-                    this.server = ws;
-                }
                 /* Parse JSON and perform the action */
                 let json = JSON.parse(decoder.write(Buffer.from(message)));
                 if (json.topic === 'sub') {
                     ws.subscribe(json.message);
-                    
                 }
                 if (!this.messageCallback) {
                     return;
