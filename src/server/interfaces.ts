@@ -11,12 +11,6 @@ export interface Printable {
     onDisconnect(): void;
 }
 
-export interface Server {
-    startServer(): void;
-    startClients(topics: number, publishers: number, subscribersPerPublisher: number): void;
-    stop(): void;
-}
-
 export interface Publishable {
     publish(topic: string, message: string): void;
 }

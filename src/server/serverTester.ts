@@ -1,6 +1,34 @@
-import { Printable, Publishable, Server, webSocketClient, webSocketServer } from "./interfaces";
+import { Printable, Publishable, webSocketClient, webSocketServer } from "./interfaces";
 import { Printer } from "./printer";
 import { Mutex } from 'async-mutex';
+import { access, writeFile, constants }  from 'fs';
+
+const watcherFilePath = "/file.txt";
+
+function createFile(filePath: string): void {
+    writeFile(filePath, '', (err) => {
+        if (err) {
+            console.error('Error creating file:', err);
+        } else {
+            console.log('File created successfully!');
+        }
+    });
+}
+
+export function waitForServerStart(): Promise<void> {
+    return new Promise((resolve, reject) => {
+        const interval = setInterval(() => {
+            access(watcherFilePath, constants.F_OK, (err) => {
+                if (!err) {
+                    clearInterval(interval);
+                    resolve();
+                }
+            });
+        }, 1000);
+    });
+}
+
+
 
 class Trader {
     constructor(private client: Publishable, private shareOfInterest: string) {
@@ -33,11 +61,41 @@ class exactInterval {
     }
 }
 
-export class ServerTester implements Server {
+export class TestCase {
+    private receivedMessagesExpected: number;
+    private establishedConnectionsExpected: number;
+    private transactionsExpected: number;
+
+    public transactionsActual: number;
+    public establishedConnectionsActual: number;
+    public receivedMessagesActual: number;
+
+    constructor(public topicCount: number,
+    public publishersPerTopic: number,
+    public subscribersPerTopic: number,
+    public runTime: number){
+        this.receivedMessagesExpected = this.runTime * 10 * this.topicCount * this.subscribersPerTopic;
+        this.transactionsExpected = this.runTime * 10 * this.publishersPerTopic;
+        this.establishedConnectionsExpected = this.topicCount * Math.max(this.subscribersPerTopic, this.publishersPerTopic);
+    }
+    public toString(): string {
+        const properties = Object.keys(this);
+        const values = properties.map(property => this[property]);
+        return values.join(",");
+    }
+    public headers(): string[]{
+        return Object.keys(this);
+    }
+    
+    public printTestCase(): void {
+
+    }
+}
+
+export class ServerTester{
     private server: webSocketServer;
     private transactions: number = 0;
     private establishedConnections: number = 0;
-    private receivedMessages = 0;
     private topics: { [key: string]: number } = {
     };
     private printInterval: exactInterval;
@@ -47,7 +105,8 @@ export class ServerTester implements Server {
     private subscribersPerTopic: number = 0;
     private Printer: Printable = new Printer();
     private mutex = new Mutex();
-
+    private receivedMessages:number = 0;
+    private testCase: TestCase;
 
     constructor(private serverBuilder: (Printable: Printable) => webSocketServer,
         private clientBuilder: (Printable: Printable, shareOfInterest: string) => webSocketClient,
@@ -79,17 +138,26 @@ export class ServerTester implements Server {
                 this.receivedMessages,
                 this.transactions * this.subscribersPerTopic,
                 this.clients.length);
-            this.mutex.runExclusive(async () => {
-                this.transactions = 0;
-                this.receivedMessages = 0;
-            });
+            this.aggregateResults();
             last = Date.now();
         }, 1000);
+    }
+
+    private aggregateResults(): void {
+        this.mutex.runExclusive(async () => {
+            this.testCase.transactionsActual += this.transactions;
+            this.testCase.establishedConnectionsActual += this.clients.length;
+            this.testCase.receivedMessagesActual += this.receivedMessages;
+            this.testCase.establishedConnectionsActual = Math.max(this.testCase.establishedConnectionsActual, this.clients.length);
+            this.transactions = 0;
+            this.receivedMessages = 0;
+        });
     }
 
     public startServer(): void {
         this.server = this.serverBuilder(this.Printer);
         this.server.onConnect(() => {
+            createFile(watcherFilePath);
             this.startServerPrints();
         });
         this.server.onMessage((topic: string, message: string) => {
@@ -137,7 +205,7 @@ export class ServerTester implements Server {
         });
         client.onMessage((topic: string, message: string) => {
             this.mutex.runExclusive(async () => {
-                this.receivedMessages++;
+                this.receivedMessages;
             });
         });
         client.connect();
@@ -151,13 +219,21 @@ export class ServerTester implements Server {
         }
     }
 
-    public startClients(topics: number, publishersPerTopic: number, subscribersPerTopic: number): void {
-        this.subscribersPerTopic = Math.max(publishersPerTopic, subscribersPerTopic);
-        for (let topicId = 0; topicId < topics; topicId++) {
-            this.startClientsForTopic(publishersPerTopic, `topic_${topicId}`);
+    public async startClients(testCase: TestCase) {
+        this.testCase = testCase;
+        this.subscribersPerTopic = Math.max(testCase.publishersPerTopic, testCase.subscribersPerTopic);
+        for (let topicId = 0; topicId < testCase.topicCount; topicId++) {
+            this.startClientsForTopic(testCase.publishersPerTopic, `topic_${topicId}`);
         }
         this.startClientPrints();
         this.startPublishing();
+        return new Promise<void>((resolve, reject) => {
+            setTimeout(() => {
+                this.stop();
+                this.aggregateResults();
+                resolve();
+            }, testCase.runTime * 1000);
+        });
     }
     public stop(): void {
         if (this.printInterval) {
