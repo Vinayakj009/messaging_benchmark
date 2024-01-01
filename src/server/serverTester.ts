@@ -11,7 +11,27 @@ class Trader {
     }
 }
 
-
+class exactInterval {
+    private nextStartTime = Date.now();
+    private timeout: NodeJS.Timeout;
+    constructor(private callback: () => void, private interval: number) {
+        this.start();
+    };
+    private start(): void {
+        this.nextStartTime = Date.now() + this.interval;
+        this.run();
+    }
+    private run(): void {
+        this.timeout = setTimeout(() => {
+            this.run();
+        }, this.nextStartTime - Date.now());
+        this.nextStartTime += this.interval;
+        this.callback();
+    }
+    public stop(): void {
+        clearTimeout(this.timeout);
+    }
+}
 
 export class ServerTester implements Server {
     private server: webSocketServer;
@@ -20,8 +40,8 @@ export class ServerTester implements Server {
     private receivedMessages = 0;
     private topics: { [key: string]: number } = {
     };
-    private printInterval: NodeJS.Timeout;
-    private publishInteval: NodeJS.Timeout;
+    private printInterval: exactInterval;
+    private publishInteval: exactInterval;
     private traders: Trader[] = [];
     private clients: webSocketClient[] = [];
     private subscribersPerTopic: number = 0;
@@ -37,9 +57,9 @@ export class ServerTester implements Server {
 
     private startServerPrints(): void {
         if (this.printInterval) {
-            clearInterval(this.printInterval);
+            this.printInterval.stop();
         }
-        this.printInterval = setInterval(() => {
+        this.printInterval = new exactInterval(async () => {
             this.Printer.printServerData(this.transactions, this.establishedConnections, this.topics);
             this.mutex.runExclusive(async () => {
                 this.transactions = 0;
@@ -49,9 +69,9 @@ export class ServerTester implements Server {
 
     private startClientPrints(): void {
         if (this.printInterval) {
-            clearInterval(this.printInterval);
+            this.printInterval.stop();
         }
-        this.printInterval = setInterval(() => {
+        this.printInterval = new exactInterval(async () => {
             let last = Date.now();
             this.Printer.printClientData(
                 this.transactions,
@@ -139,10 +159,10 @@ export class ServerTester implements Server {
     }
     public stop(): void {
         if (this.printInterval) {
-            clearInterval(this.printInterval);
+            this.printInterval.stop();
         }
         if (this.publishInteval) {
-            clearInterval(this.publishInteval);
+            this.publishInteval.stop();
         }
         if (this.clients) {
             this.traders = [];
@@ -157,10 +177,9 @@ export class ServerTester implements Server {
 
     public startPublishing(): void {
         if (this.publishInteval) {
-            clearInterval(this.publishInteval);
+            this.publishInteval.stop();
         }
-
-        this.publishInteval = setInterval(() => {
+        this.publishInteval = new exactInterval(async () => {
             for (const trader of this.traders) {
                 this.mutex.runExclusive(async () => {
                     this.transactions++;
