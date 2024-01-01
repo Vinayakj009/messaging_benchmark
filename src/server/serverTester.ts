@@ -5,7 +5,7 @@ import { Mutex } from 'async-mutex';
 class Trader {
     constructor(private client: Publishable, private shareOfInterest: string) {
     }
-    public publish(): void {
+    public async publish() {
         const topic = Math.random() > 0.5 ? 'buy' : 'sell';
         this.client.publish(topic, this.shareOfInterest);
     }
@@ -21,8 +21,8 @@ class exactInterval {
         this.nextStartTime = Date.now() + this.interval;
         this.run();
     }
-    private run(): void {
-        this.timeout = setTimeout(() => {
+    private async run() {
+        this.timeout = setTimeout(async () => {
             this.run();
         }, this.nextStartTime - Date.now());
         this.nextStartTime += this.interval;
@@ -136,7 +136,9 @@ export class ServerTester implements Server {
             }
         });
         client.onMessage((topic: string, message: string) => {
-            this.receivedMessages++;
+            this.mutex.runExclusive(async () => {
+                this.receivedMessages++;
+            });
         });
         client.connect();
         this.clients.push(client);
