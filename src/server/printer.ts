@@ -20,12 +20,11 @@ export class Printer implements Printable {
         console.log("Transactions received per second: ", receivedTransactionsPerSecond,
             " expected: ", expectedReceivedTransactionsPerSecond,
             " effeciency: ", receivedTransactionsPerSecond * 100 / expectedReceivedTransactionsPerSecond);
-        console.log("Expected ", expectedReceivedTransactionsPerSecond);
         console.log("Clients ", clients);
     }
 
     printStatus(message: string): void {
-        // Implementation goes here
+        console.log("Status", message);
     }
 
     onDisconnect(): void {

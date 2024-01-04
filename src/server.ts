@@ -2,8 +2,9 @@ import { Printable } from "./server/interfaces";
 import { SocketIoClient, SocketIoServer } from "./server/implementations/socketIo";
 import { ServerTester, TestCase } from "./server/serverTester";
 import { MqttClient, MqttServer } from "./server/implementations/mqtt";
-import { uWebSocketClient, uWebSocketServer } from "./server/implementations/uWebSocket";
+import { uWebSocketClient, uWebSocketServer } from "./server/implementations/uwebsocket";
 import { stompClient, stompServer } from "./server/implementations/stomp";
+import { ExpressWSClient, ExpressWSServer} from "./server/implementations/expressWs";
 import { writeFileSync } from 'fs';
 
 const serverTypes: {
@@ -19,14 +20,14 @@ const serverTypes: {
         client: SocketIoClient,
         server: SocketIoServer,
         protocol: "http",
-        host: "127.0.0.1",
+        host: "socketio",
         port: 1883
     },
     uwebsocket: {
         client: uWebSocketClient,
         server: uWebSocketServer,
         protocol: "http",
-        host: "127.0.0.1",
+        host: "uwebsocket",
         port: 1883
     },
     mqtt: {
@@ -41,6 +42,13 @@ const serverTypes: {
         server: stompServer,
         protocol: "ws",
         host: "stomp-broker",
+        port: 8080
+    },
+    expressWS: {
+        client: ExpressWSClient,
+        server: ExpressWSServer,
+        protocol: "ws",
+        host: "expressWS",
         port: 8080
     }
 }
@@ -64,7 +72,7 @@ function buildServerTester() {
         return new server.server(Printer, server.host, server.port, server.protocol);
     }, (Printer: Printable, shreOfInterest: string) => {
         return new server.client(Printer, shreOfInterest, server.host, server.port, server.protocol);
-    }, 100);
+    });
 }
 
 async function RunTestCases(clientTestCases: TestCase[]) {
@@ -92,9 +100,16 @@ async function RunTestCases(clientTestCases: TestCase[]) {
 async function runClients() {
     console.log("starting clients");
     var clientTestsCases: TestCase[] = [
-        new TestCase(1, 1, 1, 10),
-        new TestCase(1, 5, 20, 10),
-        new TestCase(5, 5, 20, 10),
+        new TestCase(serverType, 1, 1, 1, 10, 100),
+        new TestCase(serverType, 1, 5, 20, 10, 100),
+        new TestCase(serverType, 5, 5, 20, 10, 100),
+        new TestCase(serverType, 5, 25, 100, 10, 100),
+        new TestCase(serverType, 100, 1, 5, 10, 100),
+        new TestCase(serverType, 1, 1, 1, 10, 10),
+        new TestCase(serverType, 1, 5, 20, 10, 10),
+        new TestCase(serverType, 5, 5, 20, 10, 10),
+        new TestCase(serverType, 5, 25, 100, 10, 10),
+        new TestCase(serverType, 100, 1, 5, 10, 10),
     ];
     await RunTestCases(clientTestsCases);
     console.log("tests complete");

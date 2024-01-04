@@ -1,13 +1,12 @@
-/* Simplified stock exchange made with mqtt pub/sub */
-import { App, TemplatedApp } from 'uWebSockets.js';
-import { StringDecoder }  from 'string_decoder';
+/* Simplified stock exchange made with expressWs pub/sub */
 import { webSocketClient, webSocketServer } from './interfaces';
 import { WebSocket as socket } from 'ws';
+import ws from "ws";
+import express from 'express'
+import expressWs from 'express-ws'
 
 
-const decoder = new StringDecoder('utf8');
-
-export class uWebSocketClient implements webSocketClient {
+export class ExpressWSClient implements webSocketClient {
     private socket?: socket;
     private onConnectCallback?: () => void;
     private messageCallback?: (topic: string, message: string) => void;
@@ -52,13 +51,19 @@ export class uWebSocketClient implements webSocketClient {
     }
 }
 
-export class uWebSocketServer implements webSocketServer {
-    private server?: TemplatedApp;
+export class ExpressWSServer implements webSocketServer {
+    private server: expressWs.Instance;
     private messageCallback?: (topic: string, message: string) => void;
     private onConnectCallback?: () => void;
+    private subscriptions: {
+        [key: string]: ws[]
+    } = {};
+
     constructor(private printable: {
         printStatus(message: string): void;
     }, _host: string, private port: number, _protocol: string) {
+        var app = express();
+        this.server = expressWs(app);
     }
     public onConnect(callback: () => void): void {
         this.onConnectCallback = callback;
@@ -67,28 +72,43 @@ export class uWebSocketServer implements webSocketServer {
         this.messageCallback = callback;
     }
     public sendToTopic(topic: string, message: string): void {
-        this.server?.publish(topic, message);
+        const removables: {
+            [prop: string]: ws[]
+        } = {};
+        this.subscriptions[topic].forEach((subscriber) => {
+            try {
+                subscriber.send(JSON.stringify({
+                    topic: topic,
+                    message: message
+                }));
+        } catch (error) {
+                this.printable.printStatus(`Error sending message to ${topic}`);
+                removables[topic] = removables[topic] || [];
+                removables[topic].push(subscriber);
+        }
+        });  
+        for (const topic in removables) {
+            this.subscriptions[topic] = this.subscriptions[topic].filter((sub) => !removables[topic].includes(sub));
+        }
     }
     public stop(): void {
     }
     public startServer(): void {
-        this.server = App();
-        this.server.ws('/*', {
-            message: (ws, message, _isBinary) => {
-                /* Parse JSON and perform the action */
-                let json = JSON.parse(decoder.write(Buffer.from(message)));
+        this.server.app.ws('/', (ws, _req) => {
+            ws.on('message', (message) => {
+                let json = JSON.parse(message.toString());
                 if (json.topic === 'sub') {
-                    ws.subscribe(json.message);
+                    this.subscriptions[json.message] = this.subscriptions[json.message] || [];
+                    this.subscriptions[json.message].push(ws);
                 }
                 if (!this.messageCallback) {
                     return;
                 }
                 this.messageCallback(json.topic, json.message);
-            }
-        }).listen(this.port, (listenSocket) => { 
-            if (listenSocket) {
-                this.printable.printStatus(`Listening to port ${this.port}`);
-            }
+            });
+        });
+        this.server.app.listen(this.port, () => {
+            this.printable.printStatus(`Server started on port ${this.port}`);
             if (!this.onConnectCallback) {
                 return;
             }

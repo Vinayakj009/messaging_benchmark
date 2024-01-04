@@ -16,7 +16,7 @@ function createFile(filePath: string): void {
 }
 
 export function waitForServerStart(): Promise<void> {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve, _reject) => {
         const interval = setInterval(() => {
             access(watcherFilePath, constants.F_OK, (err) => {
                 if (!err) {
@@ -41,7 +41,7 @@ class Trader {
 
 class exactInterval {
     private nextStartTime = Date.now();
-    private timeout: NodeJS.Timeout;
+    private timeout?: NodeJS.Timeout;
     constructor(private callback: () => void, private interval: number) {
         this.start();
     };
@@ -62,58 +62,57 @@ class exactInterval {
 }
 
 export class TestCase {
-    private receivedMessagesExpected: number;
-    private establishedConnectionsExpected: number;
-    private transactionsExpected: number;
+    public receivedMessagesExpected?: number;
+    public establishedConnectionsExpected?: number;
+    public transactionsExpected?: number;
 
     public transactionsActual: number;
     public establishedConnectionsActual: number;
     public receivedMessagesActual: number;
+    [key: string]: any; // Add index signature to allow indexing with a string parameter
 
-    constructor(public topicCount: number,
-    public publishersPerTopic: number,
-    public subscribersPerTopic: number,
-    public runTime: number){
+    constructor(public serverType: string,
+        public topicCount: number,
+        public publishersPerTopic: number,
+        public subscribersPerTopic: number,
+        public runTime: number,
+        public publishPerSecond: number) {
         this.receivedMessagesActual = 0;
         this.establishedConnectionsActual = 0;
         this.transactionsActual = 0;
-        this.receivedMessagesExpected = this.runTime * 10 * this.topicCount * this.subscribersPerTopic;
-        this.transactionsExpected = this.runTime * 10 * this.publishersPerTopic;
+        this.transactionsExpected = this.runTime * this.publishPerSecond * this.publishersPerTopic;
         this.establishedConnectionsExpected = this.topicCount * Math.max(this.subscribersPerTopic, this.publishersPerTopic);
     }
+
     public toString(): string {
         const properties = Object.keys(this);
+        this.receivedMessagesExpected = this.transactionsActual * this.subscribersPerTopic;
         const values = properties.map(property => this[property]);
         return values.join(",");
     }
     public headers(): string[]{
         return Object.keys(this);
     }
-    
-    public printTestCase(): void {
-
-    }
 }
 
 export class ServerTester{
-    private server: webSocketServer;
+    private server?: webSocketServer;
     private transactions: number = 0;
     private establishedConnections: number = 0;
     private topics: { [key: string]: number } = {
     };
-    private printInterval: exactInterval;
-    private publishInteval: exactInterval;
+    private printInterval?: exactInterval;
+    private publishInteval?: exactInterval;
     private traders: Trader[] = [];
     private clients: webSocketClient[] = [];
     private subscribersPerTopic: number = 0;
     private Printer: Printable = new Printer();
     private mutex = new Mutex();
     private receivedMessages:number = 0;
-    private testCase: TestCase;
+    private testCase: TestCase = new TestCase("", 0, 0, 0, 0, 0);
 
     constructor(private serverBuilder: (Printable: Printable) => webSocketServer,
-        private clientBuilder: (Printable: Printable, shareOfInterest: string) => webSocketClient,
-        private publishPerSecond: number = 1000
+        private clientBuilder: (Printable: Printable, shareOfInterest: string) => webSocketClient
     ) {
     }
 
@@ -134,22 +133,19 @@ export class ServerTester{
             this.printInterval.stop();
         }
         this.printInterval = new exactInterval(async () => {
-            let last = Date.now();
             this.Printer.printClientData(
                 this.transactions,
-                this.traders.length * this.publishPerSecond,
+                this.traders.length * this.testCase?.publishPerSecond,
                 this.receivedMessages,
                 this.transactions * this.subscribersPerTopic,
                 this.clients.length);
             this.aggregateResults();
-            last = Date.now();
         }, 1000);
     }
 
     private aggregateResults(): void {
         this.mutex.runExclusive(async () => {
             this.testCase.transactionsActual += this.transactions;
-            this.testCase.establishedConnectionsActual += this.clients.length;
             this.testCase.receivedMessagesActual += this.receivedMessages;
             this.testCase.establishedConnectionsActual = Math.max(this.testCase.establishedConnectionsActual, this.clients.length);
             this.transactions = 0;
@@ -181,7 +177,7 @@ export class ServerTester{
                     this.topics[message] *= 1.001;
 
                     /* Value of share has changed, update subscribers */
-                    this.server.sendToTopic(message, JSON.stringify({ [message]: this.topics[message] }));
+                    this.server?.sendToTopic(message, JSON.stringify({ [message]: this.topics[message] }));
                     break;
                 }
                 case 'sell': {
@@ -191,7 +187,7 @@ export class ServerTester{
                     /* For simplicity, shares decrease 0.1% with every sale */
                     this.topics[message] *= 0.999
 
-                    this.server.sendToTopic(message, JSON.stringify({ [message]: this.topics[message] }));
+                    this.server?.sendToTopic(message, JSON.stringify({ [message]: this.topics[message] }));
                     break;
                 }
             }
@@ -206,7 +202,7 @@ export class ServerTester{
                 this.traders.push(new Trader(client, topic));
             }
         });
-        client.onMessage((topic: string, message: string) => {
+        client.onMessage((_topic: string, _message: string) => {
             this.mutex.runExclusive(async () => {
                 this.receivedMessages++;
             });
@@ -230,7 +226,7 @@ export class ServerTester{
         }
         this.startClientPrints();
         this.startPublishing();
-        return new Promise<void>((resolve, reject) => {
+        return new Promise<void>((resolve, _reject) => {
             setTimeout(() => {
                 this.stop();
                 this.aggregateResults();
@@ -267,6 +263,6 @@ export class ServerTester{
                 });
                 trader.publish();
             }
-        }, 1000 / this.publishPerSecond);
+        }, 1000 / this.testCase.publishPerSecond);
     }
 }

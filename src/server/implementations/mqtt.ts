@@ -4,11 +4,11 @@ import { webSocketClient, webSocketServer } from './interfaces';
 
 
 class MqttClient implements webSocketClient {
-    private client: mqtt.MqttClient;
+    private client?: mqtt.MqttClient;
     private clientId: string = `mqtt_${Math.random().toString(16).slice(3)}`;
-    private onConnectCallback: () => void;
-    private messageCallback: (topic: string, message: string) => void;
-    constructor(private printable: {
+    private onConnectCallback?: () => void;
+    private messageCallback?: (topic: string, message: string) => void;
+    constructor(_printable: {
         printStatus(message: string): void;
     }, private shreOfInterest: string, private host: string, private port: number, private protocol: string) {
     }
@@ -30,9 +30,8 @@ class MqttClient implements webSocketClient {
             }
         );
         this.client.on('connect', () => {
-            this.client.subscribe([this.shreOfInterest], () => {
-                this.printable.printStatus(`Client : ${this.clientId} ,Subscribed to ${this.shreOfInterest}`);
-                this.client.publish('sub', this.clientId);
+            this.client?.subscribe([this.shreOfInterest], () => {
+                this.client?.publish('sub', this.clientId);
                 if (!this.onConnectCallback) {
                     return;
                 }
@@ -47,10 +46,10 @@ class MqttClient implements webSocketClient {
         });
     }
     disconnect(): void{
-        this.client.end();
+        this.client?.end();
     }
     publish(topic: string, message: string): void{
-        this.client.publish(topic, message);
+        this.client?.publish(topic, message);
     }
     onMessage(callback: (topic: string, message: string) => void): void{
         this.messageCallback = callback;
@@ -60,9 +59,9 @@ class MqttClient implements webSocketClient {
     }
 }
 class MqttServer implements webSocketServer{
-    private client: mqtt.MqttClient;
-    private messageCallback: (topic: string, message: string) => void;
-    private onConnectCallback: () => void;
+    private client?: mqtt.MqttClient;
+    private messageCallback?: (topic: string, message: string) => void;
+    private onConnectCallback?: () => void;
     constructor(private printable: {
         printStatus(message: string): void;
     }, private host: string, private port: number, private protocol: string) {
@@ -74,10 +73,10 @@ class MqttServer implements webSocketServer{
         this.messageCallback = callback;
     }
     public sendToTopic(topic: string, message: string): void {
-        this.client.publish(topic, message);
+        this.client?.publish(topic, message);
     }
     public stop(): void {
-        this.client.end();
+        this.client?.end();
     }
     public startServer(): void{
         this.client = mqtt.connect(
@@ -90,7 +89,7 @@ class MqttServer implements webSocketServer{
             }
         );
         this.client.on('connect', () => {
-            this.client.subscribe(["buy", "sell", "sub", "disconnect/+"], () => {
+            this.client?.subscribe(["buy", "sell", "sub", "disconnect/+"], () => {
                 this.printable.printStatus(`Subscribed to topic "buy" and "sell" success`);
                 if (!this.onConnectCallback) {
                     return;

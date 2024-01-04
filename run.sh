@@ -1,6 +1,6 @@
 #!/bin/bash
 
-scripts="uwebsocket socketio mqtt stomp"
+scripts="uwebsocket socketio mqtt stomp expressWS"
 
 print_with_border() {
     local input_string="$1"
@@ -32,7 +32,8 @@ testScript(){
     docker container logs -f $script 2>&1 > logs/$script.log &
 
     print_with_border "Running client for $script"
-    docker container exec -it $script npm run test "$script"
+    docker container run -it --rm --name test-$script -v $(pwd):/project -w /project --network serverTest node:19 npm run test "$script"
+    # docker container logs -f $script
 
 
     print_with_border "Stopping server for $script"
@@ -60,8 +61,17 @@ print_with_border "Compiling typescript to js"
 docker container run -it --rm -v $(pwd):/project -w /project --network serverTest --name compiler node:19 npm run compile
 # npm run compile
 
+rm "output.csv"
 for script in $scripts; do
     testScript $script
+    if [ ! -f "output.csv" ]; then
+        head -n 1 "$script.csv" > output.csv
+    fi
+    if [ ! -f "output.csv" ]; then
+        head -n 1 "$script.csv" > output.csv
+    fi
+    tail -n +2 "$script.csv" >> output.csv
+    echo "" >> output.csv
 done
 
 print_with_border "Removing compiled js code"

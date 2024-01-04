@@ -6,26 +6,26 @@ import { Client, Stomp } from '@stomp/stompjs'
 Stomp.WebSocketClass = WebSocket;
 
 export class stompClient implements webSocketClient {
-    private onConnectCallback: () => void;
-    private messageCallback: (topic: string, message: string) => void;
-    private client: Client;
-    constructor(private printable: {
+    private onConnectCallback?: () => void;
+    private messageCallback?: (topic: string, message: string) => void;
+    private client?: Client;
+    constructor(_printable: {
         printStatus(message: string): void;
     }, private shreOfInterest: string, private host: string, private port: number, private protocol: string) {
         
     }
     connect(): void {
         this.client = Stomp.client(`${this.protocol}://${this.host}:${this.port}/ws`);
-        this.client.debug = (message) => {
+        this.client.debug = (_message) => {
         };
         this.client.onConnect = () => { 
-            this.client.subscribe(`/${this.shreOfInterest}`, (message) => {
+            this.client?.subscribe(`/${this.shreOfInterest}`, (message) => {
                 if (!this.messageCallback) {
                     return;
                 }
                 this.messageCallback(this.shreOfInterest, message.body);
             });
-            this.client.publish({destination: '/sub', body: ''});
+            this.client?.publish({destination: '/sub', body: ''});
             if (!this.onConnectCallback) {
                 return;
             }
@@ -34,10 +34,10 @@ export class stompClient implements webSocketClient {
         this.client.activate();
     }
     disconnect(): void {
-        this.client.deactivate();
+        this.client?.deactivate();
     }
     publish(topic: string, message: string): void {
-        this.client.publish({ destination: `/${topic}`, body: message });
+        this.client?.publish({ destination: `/${topic}`, body: message });
     }
     onMessage(callback: (topic: string, message: string) => void): void {
         this.messageCallback = callback;
@@ -48,10 +48,10 @@ export class stompClient implements webSocketClient {
 }
 
 export class stompServer implements webSocketServer {
-    private messageCallback: (topic: string, message: string) => void;
-    private onConnectCallback: () => void;
+    private messageCallback?: (topic: string, message: string) => void;
+    private onConnectCallback?: () => void;
     private client: Client;
-    constructor(private printable: {
+    constructor(_printable: {
         printStatus(message: string): void;
     }, private host: string, private port: number, private protocol: string) {
         this.client = new Client();
@@ -70,7 +70,7 @@ export class stompServer implements webSocketServer {
     }
     public startServer(): void {
         this.client = Stomp.client(`${this.protocol}://${this.host}:${this.port}/ws`);
-        this.client.debug = (message) => {
+        this.client.debug = (_message) => {
         };
         this.client.onConnect = () => {
             this.client.subscribe('/buy', (message) => {

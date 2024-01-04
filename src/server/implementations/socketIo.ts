@@ -5,15 +5,14 @@ import { webSocketClient, webSocketServer } from './interfaces';
 
 export class SocketIoClient implements webSocketClient {
     private socket: Socket;
-    private clientId: string = `mqtt_${Math.random().toString(16).slice(3)}`;
-    private onConnectCallback: () => void;
-    private messageCallback: (topic: string, message: string) => void;
-    constructor(private printable: {
+    private onConnectCallback?: () => void;
+    private messageCallback?: (topic: string, message: string) => void;
+    constructor(_printable: {
         printStatus(message: string): void;
     }, private shreOfInterest: string, private host: string, private port: number, private protocol: string) {
+        this.socket = io(`${this.protocol}://${this.host}:${this.port}`);
     }
     connect(): void {
-        this.socket = io(`${this.protocol}://${this.host}:${this.port}`);
         this.socket.on('connect', () => {
             this.socket.send(JSON.stringify({
                 topic: 'sub',
@@ -40,7 +39,7 @@ export class SocketIoClient implements webSocketClient {
         });
     }
     disconnect(): void {
-        this.socket.close();
+        this.socket?.close();
     }
     publish(topic: string, message: string): void {
         this.socket.send(JSON.stringify({
@@ -57,12 +56,12 @@ export class SocketIoClient implements webSocketClient {
 }
 
 export class SocketIoServer implements webSocketServer {
-    private server: Server;
-    private messageCallback: (topic: string, message: string) => void;
-    private onConnectCallback: () => void;
-    constructor(private printable: {
+    private server: Server = new Server() ;
+    private messageCallback?: (topic: string, message: string) => void;
+    private onConnectCallback?: () => void;
+    constructor(_printable: {
         printStatus(message: string): void;
-    }, private host: string, private port: number, private protocol: string) {
+    }, _host: string, private port: number, _protocol: string) {
     }
     public onConnect(callback: () => void): void {
         this.onConnectCallback = callback;
@@ -77,7 +76,6 @@ export class SocketIoServer implements webSocketServer {
         this.server.close();
     }
     public startServer(): void {
-        this.server = new Server();
         this.server.on('connection', (socket) => {
             socket.on('message', (message) => {
                 let json = JSON.parse(message);
@@ -90,10 +88,10 @@ export class SocketIoServer implements webSocketServer {
                 this.messageCallback(json.topic, json.message);
             });
         });
+        this.server.listen(this.port);
         if (!this.onConnectCallback) {
             return;
         }
         this.onConnectCallback();
-        this.server.listen(this.port);
     }
 }
