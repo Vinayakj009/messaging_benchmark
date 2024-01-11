@@ -4,7 +4,8 @@ import { ServerTester, TestCase } from "./server/serverTester";
 import { MqttClient, MqttServer } from "./server/implementations/mqtt";
 import { uWebSocketClient, uWebSocketServer } from "./server/implementations/uwebsocket";
 import { stompClient, stompServer } from "./server/implementations/stomp";
-import { ExpressWSClient, ExpressWSServer} from "./server/implementations/expressWs";
+import { ExpressWSClient, ExpressWSServer } from "./server/implementations/expressWs";
+import { BunWSClient, BunWSServer } from "./server/implementations/bun";
 import { writeFileSync } from 'fs';
 
 const serverTypes: {
@@ -49,6 +50,13 @@ const serverTypes: {
         server: ExpressWSServer,
         protocol: "ws",
         host: "expressWS",
+        port: 8080
+    },
+    bun: {
+        client: BunWSClient,
+        server: BunWSServer,
+        protocol: "ws",
+        host: "bun",
         port: 8080
     }
 }
