@@ -80,18 +80,18 @@ export class TestCase {
         this.receivedMessagesActual = 0;
         this.establishedConnectionsActual = 0;
         this.transactionsActual = 0;
-        this.transactionsExpected = this.runTime * this.publishPerSecond * this.publishersPerTopic;
+        this.transactionsExpected = this.runTime * this.publishPerSecond * this.publishersPerTopic * this.topicCount;
         this.establishedConnectionsExpected = this.topicCount * Math.max(this.subscribersPerTopic, this.publishersPerTopic);
     }
 
     public toString(): string {
-        const properties = Object.keys(this);
         this.receivedMessagesExpected = this.transactionsActual * this.subscribersPerTopic;
+        const properties = this.headers();
         const values = properties.map(property => this[property]);
         return values.join(",");
     }
     public headers(): string[]{
-        return Object.keys(this);
+        return Object.keys(this).sort();
     }
 }
 

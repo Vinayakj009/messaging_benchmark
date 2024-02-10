@@ -51,7 +51,7 @@ export class stompServer implements webSocketServer {
     private messageCallback?: (topic: string, message: string) => void;
     private onConnectCallback?: () => void;
     private client: Client;
-    constructor(_printable: {
+    constructor(private printable: {
         printStatus(message: string): void;
     }, private host: string, private port: number, private protocol: string) {
         this.client = new Client();
@@ -70,9 +70,10 @@ export class stompServer implements webSocketServer {
     }
     public startServer(): void {
         this.client = Stomp.client(`${this.protocol}://${this.host}:${this.port}/ws`);
-        this.client.debug = (_message) => {
-        };
+        // this.client.debug = (_message) => {
+        // };
         this.client.onConnect = () => {
+            this.printable.printStatus('Connected to stomp server');
             this.client.subscribe('/buy', (message) => {
                 if (!this.messageCallback) {
                     return;
@@ -96,6 +97,12 @@ export class stompServer implements webSocketServer {
             }
             this.onConnectCallback();
         }
+        new Promise((resolve, _reject) => {
+
+            this.client.onDisconnect = () => {
+                resolve(0);
+            }; 
+        });
         this.client.activate();
     }
 }
