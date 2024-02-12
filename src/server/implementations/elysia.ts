@@ -86,7 +86,7 @@ export class ElysiaServer implements webSocketServer {
     }
     public startServer(): void {
         const webSocketHandler = {
-            body: t.String(),
+            body: t.Object({ topic: t.String(), message: t.String() }),
             query: t.Object({ id: t.String() }),
             open: (ws: webSocket) => {
                 if (!this.messageCallback) {
@@ -94,8 +94,8 @@ export class ElysiaServer implements webSocketServer {
                 }
                 this.messageCallback("sub", ws.data.query.id);
             },
-            message: (ws: webSocket, data: string) => {
-                const { topic, message } = JSON.parse(data);
+            message: (ws: webSocket, data: { topic: string, message: string}) => {
+                const { topic, message } = data;
                 if (topic == "sub") {
                     ws.raw.subscribe(message);
                 }
