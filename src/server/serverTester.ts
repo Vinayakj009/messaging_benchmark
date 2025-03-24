@@ -126,6 +126,7 @@ export class ServerTester{
     private mutex = new Mutex();
     private receivedMessages:number = 0;
     private testCase: TestCase = new TestCase("", 0, 0, 0, 0, 0);
+    private validTopic = "";
 
     constructor(private serverBuilder: (Printable: Printable) => webSocketServer,
         private clientBuilder: (Printable: Printable, shareOfInterest: string) => webSocketClient
@@ -235,10 +236,11 @@ export class ServerTester{
     }
 
     public async startClients(testCase: TestCase) {
+        this.validTopic = Math.random().toString(36).substring(2, 15);
         this.testCase = testCase;
         this.subscribersPerTopic = Math.max(testCase.publishersPerTopic, testCase.subscribersPerTopic);
         for (let topicId = 0; topicId < testCase.topicCount; topicId++) {
-            this.startClientsForTopic(testCase.publishersPerTopic, `topic_${topicId}`);
+            this.startClientsForTopic(testCase.publishersPerTopic, `topic_${topicId}_${this.validTopic}`);
         }
         this.startClientPrints();
         this.startPublishing();
