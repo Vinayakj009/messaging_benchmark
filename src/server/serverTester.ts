@@ -1,7 +1,8 @@
 import { Printable, Publishable, webSocketClient, webSocketServer } from "./interfaces";
-import { Printer } from "./printer";
+import { access, constants, writeFile } from 'fs';
+
 import { Mutex } from 'async-mutex';
-import { access, writeFile, constants }  from 'fs';
+import { Printer } from "./printer";
 
 const watcherFilePath = "/file.txt";
 
@@ -41,7 +42,7 @@ class Trader {
 
 class exactInterval {
     private nextStartTime = Date.now();
-    private timeout?: NodeJS.Timeout;
+    private timeout?: NodeJS.Timer;
     constructor(private callback: () => void, private interval: number) {
         this.start();
     };
@@ -60,6 +61,21 @@ class exactInterval {
         clearTimeout(this.timeout);
     }
 }
+
+const headers: string[] = [
+    "serverType",
+    "runTime",
+    "topicCount",
+    "publishersPerTopic",
+    "publishPerSecond",
+    "subscribersPerTopic",
+    "establishedConnectionsActual",
+    "establishedConnectionsExpected",
+    "transactionsActual",
+    "transactionsExpected",
+    "receivedMessagesActual",
+    "receivedMessagesExpected"
+];
 
 export class TestCase {
     public receivedMessagesExpected?: number;
@@ -91,7 +107,7 @@ export class TestCase {
         return values.join(",");
     }
     public headers(): string[]{
-        return Object.keys(this).sort();
+        return headers;
     }
 }
 
