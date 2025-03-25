@@ -1,50 +1,54 @@
 import pandas as pd
 import sys
 import matplotlib.pyplot as plt
+from tabulate import tabulate
+import random
 
-def plot_graph(data, x_column, y_neumerator, y_denominator, title, xlabel, ylabel):
-    plt.figure(figsize=(10, 7.5))  # Adjust the figure size to fit the screen better
-    server_types = data['serverType'].unique()
-    bar_width = 0.1
-    index = range(len(data[x_column].unique()))
-    
-    for i, server_type in enumerate(server_types):
-        group = data[data['serverType'] == server_type]
-        ynAggreaget = group.groupby(x_column)[y_neumerator].sum()
-        ydAggregate = group.groupby(x_column)[y_denominator].sum()
-        
-        # Align indices
-        common_index = ynAggreaget.index.intersection(ydAggregate.index)
-        ynAggreaget = ynAggreaget.loc[common_index]
-        ydAggregate = ydAggregate.loc[common_index]
-        
-        y_column = 100 * ynAggreaget / ydAggregate
-        plt.bar([p + (bar_width * i) for p in index], y_column, bar_width, label=server_type)  # Adjust bar positions for separation
-    
-    plt.title(title)
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
-    plt.xticks([p + (bar_width * (len(server_types) - 1) / 2) for p in index], common_index)
-    plt.legend(title='Server Type')
-    plt.tight_layout()  # Adjust layout to fit everything nicely
-    plt.show()
+# Load the CSV file
+if len(sys.argv) < 2:
+    print("Usage: python analyze_data.py <file_path> [exclude_server_type1 exclude_server_type2 ...]")
+    sys.exit(1)
 
-def main(csv_file):
-    # Read the CSV file
-    data = pd.read_csv(csv_file)
-    
-    plot_graph(data, "establishedConnectionsExpected", "transactionsActual", "transactionsExpected", "Transmit Efficiency vs Established Connections", "Established Connections", "Transmit Efficiency")
-    plot_graph(data, "publishersPerTopic", "transactionsActual", "transactionsExpected", "Transmit Efficiency vs Publishers Per Topic", "Publishers Per Topic", "Transmit Efficiency")
-    plot_graph(data, "subscribersPerTopic", "transactionsActual", "transactionsExpected", "Transmit Efficiency vs Subscribers Per Topic", "Subscribers Per Topic", "Transmit Efficiency")
-    
-    plot_graph(data, "establishedConnectionsExpected", "receivedMessagesActual", "receivedMessagesExpected", "Receive Efficiency vs Established Connections", "Established Connections", "Receive Efficiency")
-    plot_graph(data, "publishersPerTopic", "receivedMessagesActual", "receivedMessagesExpected", "Receive Efficiency vs Publishers Per Topic", "Publishers Per Topic", "Receive Efficiency")
-    plot_graph(data, "subscribersPerTopic", "receivedMessagesActual", "receivedMessagesExpected", "Receive Efficiency vs Subscribers Per Topic", "Subscribers Per Topic", "Receive Efficiency")
+file_path = sys.argv[1]
+exclude_server_types = sys.argv[2:]
 
-if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: python analyze_data.py <csv_file>")
-        sys.exit(1)
-    
-    csv_file = sys.argv[1]
-    main(csv_file)
+data = pd.read_csv(file_path)
+
+# Filter out the server types to be excluded
+if exclude_server_types:
+    data = data[~data['serverType'].isin(exclude_server_types)]
+
+# Group by serverType and find the max throughput and average latency
+grouped = data.groupby('serverType').agg({
+    'totalLatency': 'sum',
+    'receivedMessagesActual': 'sum',
+    'transactionsActual': 'sum',
+    'runTime': 'sum',
+    'maxLatency': 'max',
+}).reset_index()
+
+# Calculate average latency (totalLatency / receivedMessagesActual)
+grouped['averageLatency'] = grouped['totalLatency'] / grouped['receivedMessagesActual']
+
+
+# Calculate average throughput (receivedMessagesActual / runTime)
+grouped['throughput'] = grouped['receivedMessagesActual'] / grouped['runTime']
+
+# Rename columns
+grouped.rename(columns={
+    'receivedMessagesActual': 'received',
+    'transactionsActual': 'transmitted'
+}, inplace=True)
+
+# Drop the totalLatency column
+grouped.drop(columns=['totalLatency'], inplace=True)
+
+# Drop the totalLatency column
+grouped.drop(columns=['runTime'], inplace=True)
+
+# Display the final data as a table
+# Shuffle the rows randomly
+grouped = grouped.sample(frac=1).reset_index(drop=True)
+
+# Display the final data as a table
+print(tabulate(grouped, headers='keys', tablefmt='psql', showindex=False))

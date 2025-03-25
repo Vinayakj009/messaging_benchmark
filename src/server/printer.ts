@@ -1,13 +1,6 @@
 import { Printable } from "./interfaces";
 
-
 export class Printer implements Printable {
-    printServerData(transactionsPerSecond: number, activeSubscribers: number, shares: { [key: string]: number }): void {
-        console.log("Transactions per second: ", transactionsPerSecond);
-        console.log("Active subscribers: ", activeSubscribers);
-        console.log("Here are the curret shares:", shares);
-    }
-
     printClientData(
         sentTransactionsPerSecond: number,
         expectedTransactionsPerSecond: number,

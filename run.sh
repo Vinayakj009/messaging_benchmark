@@ -108,3 +108,21 @@ rm src/*.js src/server/*.js src/server/*/*.js
 
 print_with_border "Removing local network serverTest"
 docker network rm serverTest 2>&1 >/dev/null
+cd analysis/
+print_with_border "Checking for .env folder"
+if [ ! -d ".env" ]; then
+    print_with_border "Creating Python virtual environment"
+    python3 -m venv .env
+    print_with_border "Activating virtual environment and installing requirements"
+    source .env/bin/activate
+    pip install -r requirements.txt
+    deactivate
+else
+    print_with_border ".env folder already exists"
+fi
+
+source .env/bin/activate
+print_with_border "Results"
+python analyze_data.py ../output.csv
+
+print_with_border "Exiting"

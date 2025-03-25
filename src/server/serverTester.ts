@@ -31,12 +31,11 @@ export function waitForServerStart(): Promise<void> {
 
 
 
-class Trader {
-    constructor(private client: Publishable, private shareOfInterest: string) {
+class Publisher {
+    constructor(private client: Publishable, private topic: string) {
     }
     public async publish() {
-        const topic = Math.random() > 0.5 ? 'buy' : 'sell';
-        this.client.publish(topic, this.shareOfInterest);
+        this.client.publish(this.topic, `${Date.now()}`);
     }
 }
 
@@ -74,7 +73,10 @@ const headers: string[] = [
     "transactionsActual",
     "transactionsExpected",
     "receivedMessagesActual",
-    "receivedMessagesExpected"
+    "receivedMessagesExpected",
+    "averageLatency",
+    "totalLatency",
+    "maxLatency"
 ];
 
 export class TestCase {
@@ -85,6 +87,9 @@ export class TestCase {
     public transactionsActual: number;
     public establishedConnectionsActual: number;
     public receivedMessagesActual: number;
+    public averageLatency: number = 0;
+    public totalLatency: number = 0;
+    public maxLatency: number = 0;
     [key: string]: any; // Add index signature to allow indexing with a string parameter
 
     constructor(public serverType: string,
@@ -101,7 +106,8 @@ export class TestCase {
     }
 
     public toString(): string {
-        this.receivedMessagesExpected = this.transactionsActual * this.subscribersPerTopic;
+        this.receivedMessagesExpected = this.transactionsActual * Math.max(this.subscribersPerTopic, this.publishersPerTopic);
+        this.averageLatency = this.totalLatency / this.receivedMessagesActual;
         const properties = this.headers();
         const values = properties.map(property => this[property]);
         return values.join(",");
@@ -115,16 +121,16 @@ export class ServerTester{
     private server?: webSocketServer;
     private transactions: number = 0;
     private establishedConnections: number = 0;
-    private topics: { [key: string]: number } = {
-    };
     private printInterval?: exactInterval;
     private publishInteval?: exactInterval;
-    private traders: Trader[] = [];
+    private publishers: Publisher[] = [];
     private clients: webSocketClient[] = [];
     private subscribersPerTopic: number = 0;
     private Printer: Printable = new Printer();
     private mutex = new Mutex();
-    private receivedMessages:number = 0;
+    private receivedMessages: number = 0;
+    private totalLatency: number = 0;
+    private maxLatency: number = 0;
     private testCase: TestCase = new TestCase("", 0, 0, 0, 0, 0);
     private validTopic = "";
 
@@ -138,7 +144,6 @@ export class ServerTester{
             this.printInterval.stop();
         }
         this.printInterval = new exactInterval(async () => {
-            this.Printer.printServerData(this.transactions, this.establishedConnections, this.topics);
             this.mutex.runExclusive(async () => {
                 this.transactions = 0;
             });
@@ -152,7 +157,7 @@ export class ServerTester{
         this.printInterval = new exactInterval(async () => {
             this.Printer.printClientData(
                 this.transactions,
-                this.traders.length * this.testCase?.publishPerSecond,
+                this.publishers.length * this.testCase?.publishPerSecond,
                 this.receivedMessages,
                 this.transactions * this.subscribersPerTopic,
                 this.clients.length);
@@ -165,8 +170,11 @@ export class ServerTester{
             this.testCase.transactionsActual += this.transactions;
             this.testCase.receivedMessagesActual += this.receivedMessages;
             this.testCase.establishedConnectionsActual = Math.max(this.testCase.establishedConnectionsActual, this.clients.length);
+            this.testCase.totalLatency += this.totalLatency;
+            this.testCase.maxLatency = Math.max(this.testCase.maxLatency, this.maxLatency);
             this.transactions = 0;
             this.receivedMessages = 0;
+            this.totalLatency = 0;
         });
     }
 
@@ -181,48 +189,30 @@ export class ServerTester{
                 this.establishedConnections--;
                 return;
             }
-            switch (topic) {
-                case 'sub': {
-                    this.establishedConnections++;
-                    break;
-                }
-                case 'buy': {
-                    this.transactions++;
-                    this.topics[message] = this.topics[message] || 1;
-
-                    /* For simplicity, shares increase 0.1% with every buy */
-                    this.topics[message] *= 1.001;
-
-                    /* Value of share has changed, update subscribers */
-                    this.server?.sendToTopic(message, JSON.stringify({ [message]: this.topics[message] }));
-                    break;
-                }
-                case 'sell': {
-                    this.transactions++;
-                    this.topics[message] = this.topics[message] || 1;
-
-                    /* For simplicity, shares decrease 0.1% with every sale */
-                    this.topics[message] *= 0.999
-
-                    this.server?.sendToTopic(message, JSON.stringify({ [message]: this.topics[message] }));
-                    break;
-                }
+            if (topic == 'sub') {
+                this.establishedConnections++;
+                return;
             }
+            this.transactions++;
+            this.server?.sendToTopic(topic, message);
         });
         this.server.startServer();
     }
-    public buildClient(topic: string, isTrader: boolean) {
+    public buildClient(topic: string, isPublisher: boolean) {
         const client = this.clientBuilder(this.Printer, topic);
         client.onConnect(() => {
             this.establishedConnections++;
-            if (isTrader) {
-                this.traders.push(new Trader(client, topic));
+            if (isPublisher) {
+                this.publishers.push(new Publisher(client, topic));
             }
         });
         client.onMessage((_topic: string, _message: string) => {
-            this.mutex.runExclusive(async () => {
-                this.receivedMessages++;
-            });
+            let sentAt: any = _message;
+            this.receivedMessages++;
+            const latency = Date.now() - sentAt;
+            this.totalLatency += latency;
+            this.maxLatency = Math.max(this.maxLatency, latency);
+
         });
         client.connect();
         this.clients.push(client);
@@ -260,7 +250,7 @@ export class ServerTester{
             this.publishInteval.stop();
         }
         if (this.clients) {
-            this.traders = [];
+            this.publishers = [];
             for (const connection of this.clients) {
                 connection.disconnect();
             }
@@ -275,7 +265,7 @@ export class ServerTester{
             this.publishInteval.stop();
         }
         this.publishInteval = new exactInterval(async () => {
-            for (const trader of this.traders) {
+            for (const trader of this.publishers) {
                 this.mutex.runExclusive(async () => {
                     this.transactions++;
                 });

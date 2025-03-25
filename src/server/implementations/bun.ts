@@ -1,8 +1,8 @@
 /* Simplified stock exchange made with expressWs pub/sub */
 import { Server, ServerWebSocket } from 'bun';
 import { webSocketClient, webSocketServer } from './interfaces';
-import { WebSocket } from 'ws';
 
+import { WebSocket } from 'ws';
 
 export class BunWSClient implements webSocketClient {
     private socket?: WebSocket;
@@ -11,23 +11,22 @@ export class BunWSClient implements webSocketClient {
     private messageCallback?: (topic: string, message: string) => void;
     constructor(_printable: {
         printStatus(message: string): void;
-    }, private shreOfInterest: string, private host: string, private port: number, private protocol: string) {
+    }, private topic: string, private host: string, private port: number, private protocol: string) {
     }
     connect(): void {
         this.socket = new WebSocket(`${this.protocol}://${this.host}:${this.port}/ws?id=${this.clientId}`);
         this.socket.onopen = () => {
-            this.socket?.send(JSON.stringify({ topic: 'sub', message: this.shreOfInterest }))
+            this.socket?.send(JSON.stringify({ topic: 'sub', message: this.topic }))
             if (!this.onConnectCallback) {
                 return;
             }
             this.onConnectCallback();
         }
         this.socket.onmessage = (event) => {
-            let json = JSON.parse(event.data.toString());
             if (!this.messageCallback) {
                 return;
             }
-            this.messageCallback(json.topic, json.message);
+            this.messageCallback(this.topic, event.data.toString());
         }
     }
     disconnect(): void {

@@ -1,7 +1,8 @@
+import { Socket, io } from 'socket.io-client';
+import { webSocketClient, webSocketServer } from './interfaces';
+
 /* Simplified stock exchange made with mqtt pub/sub */
 import { Server } from 'socket.io';
-import { io, Socket } from 'socket.io-client';
-import { webSocketClient, webSocketServer } from './interfaces';
 
 export class SocketIoClient implements webSocketClient {
     private socket: Socket;
@@ -9,21 +10,20 @@ export class SocketIoClient implements webSocketClient {
     private messageCallback?: (topic: string, message: string) => void;
     constructor(_printable: {
         printStatus(message: string): void;
-    }, private shreOfInterest: string, private host: string, private port: number, private protocol: string) {
+    }, private topic: string, private host: string, private port: number, private protocol: string) {
         this.socket = io(`${this.protocol}://${this.host}:${this.port}`);
     }
     connect(): void {
         this.socket.on('connect', () => {
             this.socket.send(JSON.stringify({
                 topic: 'sub',
-                message: this.shreOfInterest
+                message: this.topic
             }));
-            this.socket.on(this.shreOfInterest, (message) => {
-                let json = JSON.parse(message);
+            this.socket.on(this.topic, (message) => {
                 if (!this.messageCallback) {
                     return;
                 }
-                this.messageCallback(json.topic, json.message);
+                this.messageCallback(this.topic, message);
                 
             });
             if(!this.onConnectCallback) {

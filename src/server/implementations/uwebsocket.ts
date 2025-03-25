@@ -1,9 +1,9 @@
-/* Simplified stock exchange made with mqtt pub/sub */
 import { App, TemplatedApp } from 'uWebSockets.js';
-import { StringDecoder }  from 'string_decoder';
 import { webSocketClient, webSocketServer } from './interfaces';
-import { WebSocket as socket } from 'ws';
 
+/* Simplified stock exchange made with mqtt pub/sub */
+import { StringDecoder } from 'string_decoder';
+import { WebSocket as socket } from 'ws';
 
 const decoder = new StringDecoder('utf8');
 
@@ -13,23 +13,22 @@ export class uWebSocketClient implements webSocketClient {
     private messageCallback?: (topic: string, message: string) => void;
     constructor(_printable: {
         printStatus(message: string): void;
-    }, private shreOfInterest: string, private host: string, private port: number, private protocol: string) {
+    }, private topic: string, private host: string, private port: number, private protocol: string) {
     }
     connect(): void {
         this.socket = new socket(`${this.protocol}://${this.host}:${this.port}`);
         this.socket.onopen = () => {
-            this.socket?.send(JSON.stringify({ topic: 'sub', message: this.shreOfInterest }))
+            this.socket?.send(JSON.stringify({ topic: 'sub', message: this.topic }))
             if (!this.onConnectCallback) {
                 return;
             }
             this.onConnectCallback();
         }
         this.socket.onmessage = (event) => {
-            let json = JSON.parse(event.data.toString());
             if (!this.messageCallback) {
                 return;
             }
-            this.messageCallback(json.topic, json.message);
+            this.messageCallback(this.topic, event.data.toString());
         }
     }
     disconnect(): void {

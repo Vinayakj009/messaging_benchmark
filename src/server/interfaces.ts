@@ -1,6 +1,5 @@
 export * from "./implementations/interfaces";
 export interface Printable {
-    printServerData(transactionsPerSecond: number, activeSubscribers: number, shares: { [key: string]: number }): void;
     printClientData(
         sentTransactionsPerSecond: number,
         expectedTransactionsPerSecond: number,

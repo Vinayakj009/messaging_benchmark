@@ -2,3 +2,5 @@ node_modules/*
 package-lock.json
 dest
 requirements/stomp/stomp.jar
+*.csv
+*/*.log
