@@ -13,3 +13,7 @@ The codebase has inbuilt support for testing the following frameworks.
 6. Elysia.
 7. Bun.
 
+To run the test ensure that docker and python is installed, and run the following command
+```
+bash run.sh
+```
